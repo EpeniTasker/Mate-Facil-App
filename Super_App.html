@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <!-- Meta tags para PWA (App Web Progresiva) -->
+    <meta name="theme-color" content="#4CAF50">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Mate-Fácil">
+    <link id="manifest-placeholder" rel="manifest" href="">
+    <link id="apple-icon-placeholder" rel="apple-touch-icon" href="">
+
+    <title>Mate-Fácil - Súper App</title>
+    <style>
+        /* Estilos generales y variables */
+        :root {
+            --primary: #4CAF50; --primary-dark: #388E3C;
+            --secondary: #2196F3; --secondary-dark: #1976D2;
+            --warning: #FFC107; --danger: #FF5722;
+            --background: #f0f8ff; --text: #333; --card-bg: #ffffff;
+            --level1: #8BC34A; --level2: #FFEB3B; --level3: #FF9800; --level4: #E91E63; --level5: #9C27B0;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Comic Sans MS', 'Arial Rounded MT Bold', Arial, sans-serif; }
+
+        body { background-color: var(--background); color: var(--text); display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 10px; }
+
+        .app-container { background-color: var(--card-bg); width: 100%; max-width: 500px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); overflow: hidden; position: relative; }
+
+        .view { display: none; padding: 25px 20px; text-align: center; animation: fadeIn 0.3s ease-in-out; }
+        .view.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+
+        h1 { color: var(--secondary-dark); margin-bottom: 5px; font-size: 28px; }
+        h2 { color: var(--primary-dark); margin-bottom: 20px; font-size: 22px; }
+        p { margin-bottom: 20px; font-size: 16px; line-height: 1.5; }
+
+        /* Botones */
+        .btn { display: inline-block; background-color: var(--primary); color: white; border: none; padding: 15px 20px; font-size: 18px; border-radius: 50px; cursor: pointer; width: 100%; margin-bottom: 15px; transition: transform 0.1s; box-shadow: 0 5px 15px rgba(0,0,0,0.1); font-weight: bold; }
+        .btn:active { transform: scale(0.95); }
+        .btn-blue { background-color: var(--secondary); }
+        .btn-orange { background-color: var(--danger); }
+        .btn-back { background-color: #ccc; color: #333; margin-top: 10px; padding: 10px; font-size: 16px; }
+
+        /* Cuadrícula de Niveles */
+        .level-btn { padding: 15px; border-radius: 15px; margin-bottom: 10px; color: white; text-align: left; display: flex; align-items: center; justify-content: space-between; border: none; width: 100%; cursor: pointer; font-size: 18px; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: transform 0.1s; }
+        .level-btn:active { transform: scale(0.98); }
+        .l1 { background-color: var(--level1); color: #000; }
+        .l2 { background-color: var(--level2); color: #000; }
+        .l3 { background-color: var(--level3); }
+        .l4 { background-color: var(--level4); }
+        .l5 { background-color: var(--level5); }
+
+        /* Cuadrícula de Días */
+        .day-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+        .day-btn { background-color: #e3f2fd; border: 2px solid var(--secondary); border-radius: 12px; padding: 15px 0; font-size: 20px; font-weight: bold; color: var(--secondary-dark); cursor: pointer; position: relative; transition: all 0.2s; }
+        .day-btn:active { transform: scale(0.9); background-color: var(--secondary); color: white; }
+        .day-btn.completed { background-color: var(--primary); color: white; border-color: var(--primary-dark); }
+        .day-btn.completed::after { content: '⭐'; position: absolute; top: -8px; right: -8px; font-size: 16px; }
+
+        /* UI Quiz */
+        .header-quiz { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; font-size: 18px; font-weight: bold; color: #666; }
+        .timer { background-color: var(--warning); padding: 5px 15px; border-radius: 20px; color: #000; }
+        .question-box { font-size: 55px; font-weight: bold; color: var(--secondary-dark); margin: 20px 0; min-height: 120px; display: flex; align-items: center; justify-content: center; }
+        
+        .vertical-math { display: inline-block; text-align: right; font-family: 'Courier New', Courier, monospace; font-size: 50px; line-height: 1.1; letter-spacing: 2px; }
+        .vertical-math .line { border-top: 4px solid var(--secondary-dark); margin-top: 5px; padding-top: 5px; }
+        .word-problem { font-size: 22px; line-height: 1.4; color: var(--text); padding: 0 10px; letter-spacing: normal; font-family: sans-serif; }
+
+        .input-box { margin-bottom: 20px; }
+        input[type="number"] { width: 80%; font-size: 40px; text-align: center; padding: 10px; border: 3px solid var(--secondary); border-radius: 15px; outline: none; color: var(--text); }
+        
+        .parent-link { margin-top: 20px; font-size: 14px; color: #999; text-decoration: underline; cursor: pointer; }
+        
+        /* Progress Bar */
+        .progress-bar-container { width: 100%; background-color: #e0e0e0; border-radius: 10px; margin-bottom: 20px; height: 10px; }
+        .progress-bar { height: 100%; background-color: var(--primary); border-radius: 10px; width: 0%; transition: width 0.3s; }
+
+        @keyframes popIn { 0% { transform: scale(0); opacity: 0; } 70% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+        .pop-icon { animation: popIn 0.4s ease-out; }
+
+        /* Estilos de Activación y Prueba Gratuita */
+        .activation-box { border: 3px solid var(--danger); background-color: #fff3e0; padding: 20px; border-radius: 15px; margin: 20px 0; }
+        .device-code { font-size: 35px; font-weight: bold; color: var(--danger); letter-spacing: 2px; margin: 10px 0; font-family: monospace; }
+        .activation-input { width: 100%; font-size: 24px; text-align: center; padding: 12px; border: 2px solid var(--secondary); border-radius: 10px; margin-bottom: 15px; }
+        
+        .trial-banner { background-color: var(--warning); color: #000; padding: 10px; border-radius: 10px; margin-bottom: 15px; font-size: 14px; font-weight: bold; text-align: center; }
+        .trial-banner a { color: var(--danger); margin-left: 10px; text-decoration: underline; cursor: pointer; }
+
+        /* Estilos de Instalación */
+        .install-guide { background-color: #f1f8e9; border: 2px dashed var(--primary); padding: 15px; border-radius: 15px; text-align: left; margin-bottom: 20px; font-size: 14px; }
+        .install-guide h3 { color: var(--primary-dark); margin-bottom: 10px; }
+        .install-guide ul { margin-left: 20px; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <!-- VISTA: ACTIVACIÓN (CANDADO) -->
+        <div id="view-activation" class="view">
+            <h1>Mate-Fácil 🔒</h1>
+            <p>¡Tu prueba gratuita ha finalizado! Para seguir jugando, necesitas una licencia de activación en este dispositivo.</p>
+            
+            <div class="activation-box">
+                <p style="margin-bottom: 5px; font-size: 14px; color: #555;">Tu Código de Dispositivo es:</p>
+                <div class="device-code" id="display-device-code">MF-0000</div>
+                <p style="font-size: 14px; margin-bottom: 0;">Envía este código al creador para obtener tu clave de acceso.</p>
+            </div>
+
+            <button class="btn" onclick="requestKey()" style="background-color: #25D366; color:white; border:none; padding:15px; font-size:16px; border-radius:50px; width:100%; margin-bottom:20px; font-weight:bold; cursor:pointer; box-shadow: 0 5px 15px rgba(37, 211, 102, 0.3);">
+                💬 Solicitar Clave por WhatsApp
+            </button>
+
+            <input type="number" id="input-activation-key" class="activation-input" placeholder="Ingresa tu clave aquí" inputmode="numeric">
+            <button class="btn btn-blue" onclick="verifyKey()">Desbloquear App 🔓</button>
+            <p id="activation-error" style="color: red; display: none; margin-top: 10px;">❌ Clave incorrecta.</p>
+        </div>
+
+        <!-- VISTA: SELECCIÓN DE NIVEL -->
+        <div id="view-home" class="view">
+            <h1>Mate-Fácil 🚀</h1>
+            <div id="trial-banner" class="trial-banner" style="display:none;">
+                ⏳ Prueba gratis: <span id="trial-hours-left">48</span>h restantes. <a onclick="showView('activation')">Activar ahora</a>
+            </div>
+
+            <!-- Botón de Instalación PWA (Aparece automáticamente si el navegador lo permite) -->
+            <button id="btn-pwa-install" class="btn" onclick="installPWA()" style="display:none; background-color: #2196F3; font-size: 16px; margin-bottom: 20px; box-shadow: 0 5px 15px rgba(33, 150, 243, 0.3);">
+                ⬇️ Instalar App en el Celular
+            </button>
+
+            <!-- Botón manual de ayuda para instalar -->
+            <button class="btn" onclick="showView('install')" style="background-color: #ff9800; padding: 10px; font-size: 14px; box-shadow: none; margin-bottom: 20px;">
+                📲 ¿Cómo guardar esta App manualmente?
+            </button>
+
+            <p>¡Bienvenido! Selecciona tu nivel de entrenamiento.</p>
+            
+            <button class="level-btn l1" onclick="openLevel(1)">
+                <span>1️⃣ Aprendiendo a Sumar y Restar</span> <span>➡️</span>
+            </button>
+            <button class="level-btn l2" onclick="openLevel(2)">
+                <span>2️⃣ Dominando Sumas y Restas</span> <span>➡️</span>
+            </button>
+            <button class="level-btn l3" onclick="openLevel(3)">
+                <span>3️⃣ Intro a Multiplicaciones</span> <span>➡️</span>
+            </button>
+            <button class="level-btn l4" onclick="openLevel(4)">
+                <span>4️⃣ Dominando las Multi</span> <span>➡️</span>
+            </button>
+            <button class="level-btn l5" onclick="openLevel(5)">
+                <span>5️⃣ Súper Matemático</span> <span>➡️</span>
+            </button>
+
+            <div class="parent-link" onclick="openParentArea()">⚙️ Zona de Padres</div>
+        </div>
+
+        <!-- VISTA: SELECCIÓN DE DÍA -->
+        <div id="view-days" class="view">
+            <h2 id="level-title">Nivel X</h2>
+            <p>Selecciona el día de hoy (1 al 20):</p>
+            
+            <div class="day-grid" id="day-grid-container">
+                <!-- Se inyectan los 20 botones por JS -->
+            </div>
+
+            <button class="btn btn-back" onclick="showView('home')">⬅️ Volver a Niveles</button>
+        </div>
+
+        <!-- VISTA: QUIZ (EJERCICIOS) -->
+        <div id="view-quiz" class="view">
+            <div class="header-quiz">
+                <span id="quiz-progress">1 / 10</span>
+                <span class="timer">⏳ <span id="quiz-timer">0</span>s</span>
+            </div>
+            
+            <div class="progress-bar-container"><div class="progress-bar" id="progress-bar"></div></div>
+            <p id="quiz-tip" style="color: #666; font-size: 14px; margin-top: -10px; min-height: 20px;">¡Concéntrate!</p>
+
+            <div class="question-box" id="question-text">? + ?</div>
+            
+            <div class="input-box">
+                <input type="number" id="answer-input" placeholder="?" inputmode="numeric" autocomplete="off">
+            </div>
+            
+            <button id="btn-next" class="btn btn-blue">Responder ✔️</button>
+            <button class="btn btn-back" onclick="abortQuiz()" style="padding: 8px; font-size: 14px;">Cancelar</button>
+        </div>
+
+        <!-- VISTA: FEEDBACK -->
+        <div id="view-feedback" class="view">
+            <div id="feedback-icon" class="pop-icon" style="font-size: 80px; margin: 20px 0;">✅</div>
+            <h2 id="feedback-message" style="font-size: 28px;">¡Correcto!</h2>
+            <button class="btn btn-blue" onclick="continueQuiz()" style="margin-top: 30px;">Siguiente ➡️</button>
+        </div>
+
+        <!-- VISTA: RESULTADO -->
+        <div id="view-result" class="view">
+            <h1>¡Día Completado! 🎉</h1>
+            <h3 id="result-level-day" style="color: #666; margin-bottom: 10px;">Nivel 1 - Día 1</h3>
+            
+            <div style="font-size: 60px; margin: 10px 0;">
+                <span id="score-text">10</span><span style="font-size: 30px; color: #999;">/10</span>
+            </div>
+
+            <div style="background: #fff3e0; border-radius: 10px; padding: 10px; margin-bottom: 15px; display: inline-block;">
+                <span style="font-size: 18px; font-weight: bold; color: var(--danger);">⏱️ Tiempo: <span id="total-time-display">0</span>s</span>
+            </div>
+            
+            <p id="score-message">¡Gran trabajo!</p>
+
+            <button class="btn" onclick="showView('days')">Volver al Calendario</button>
+            <button class="btn btn-blue" onclick="sendWhatsApp()">📱 Enviar a Mamá/Papá</button>
+        </div>
+
+        <!-- VISTA: PADRES -->
+        <div id="view-parent" class="view">
+            <h2>📊 Zona de Padres</h2>
+            <p style="font-size: 14px;">Registro de actividades de la Súper App.</p>
+            
+            <div style="max-height: 350px; overflow-y: auto; margin-bottom: 20px; text-align: left;" id="parent-records">
+                <!-- Registros -->
+            </div>
+            
+            <button class="btn btn-blue" onclick="showView('home')">Volver al Inicio</button>
+            <button class="btn btn-back" onclick="clearData()">Borrar TODO el Historial</button>
+        </div>
+
+        <!-- NUEVA VISTA: INSTRUCCIONES DE INSTALACIÓN -->
+        <div id="view-install" class="view">
+            <h2>📲 Guardar en el Celular</h2>
+            <p>Para entrar rápido todos los días sin buscar en WhatsApp, guarda Mate-Fácil en tu pantalla de inicio.</p>
+            
+            <div class="install-guide">
+                <h3>🤖 Si usas Android (Chrome):</h3>
+                <ul>
+                    <li>Toca los <strong>3 puntitos (⋮)</strong> arriba a la derecha.</li>
+                    <li>Selecciona <strong>"Añadir a pantalla de inicio"</strong>.</li>
+                    <li>Toca en "Añadir".</li>
+                </ul>
+            </div>
+
+            <div class="install-guide">
+                <h3>🍎 Si usas iPhone (Safari):</h3>
+                <ul>
+                    <li>Toca el <strong>ícono de Compartir</strong> (cuadrado con flechita arriba) abajo.</li>
+                    <li>Baja y selecciona <strong>"Agregar a inicio"</strong> (ícono de suma +).</li>
+                    <li>Toca en "Agregar".</li>
+                </ul>
+            </div>
+            
+            <p style="font-size: 12px; color: #666; margin-top: 15px;">¡Aparecerá el ícono de Mate-Fácil junto a tus otras aplicaciones!</p>
+
+            <button class="btn btn-blue" onclick="showView('home')">¡Entendido! Volver</button>
+        </div>
+
+    </div>
+
+    <script>
+        // CONFIGURACIÓN GLOBAL
+        const PREGUNTAS_POR_DIA = 10;
+        const PARENT_PIN = "1234";
+        const PHONE_NUMBER = "584265810670"; // Tu número de WhatsApp
+
+        // FÓRMULA SECRETA DE ACTIVACIÓN (No la compartas)
+        // La clave es: (Código * MULTIPLIER) + ADDITION
+        const SECRET_MULTIPLIER = 7;
+        const SECRET_ADDITION = 142;
+
+        const NOMBRES_NIVELES = {
+            1: "Aprendiendo a Sumar y Restar",
+            2: "Dominando Sumas y Restas",
+            3: "Intro a Multiplicaciones",
+            4: "Dominando las Multi",
+            5: "Súper Matemático"
+        };
+
+        const TRIAL_HOURS = 48; // Horas de prueba gratuita
+        const MS_PER_HOUR = 3600000; // Milisegundos en una hora
+
+        // ESTADO DE LA APP
+        let currentLevel = 1;
+        let currentDay = 1;
+        let questions = [];
+        let currentQIndex = 0;
+        let currentAnswers = [];
+        let timerInterval;
+        let qStartTime;
+        
+        // Cargar historial y estado de activación
+        let historyData = JSON.parse(localStorage.getItem('mate_facil_super_app')) || [];
+        let isActivated = localStorage.getItem('mate_facil_activated') === 'true';
+        let myDeviceCode = localStorage.getItem('mate_facil_device_code');
+        let firstOpenTime = localStorage.getItem('mate_facil_first_open');
+
+        // IMPORTANTE: Agregar la vista "install" al registro de vistas
+        const views = {
+            activation: document.getElementById('view-activation'),
+            home: document.getElementById('view-home'),
+            days: document.getElementById('view-days'),
+            quiz: document.getElementById('view-quiz'),
+            feedback: document.getElementById('view-feedback'),
+            result: document.getElementById('view-result'),
+            parent: document.getElementById('view-parent'),
+            install: document.getElementById('view-install')
+        };
+        const inputAnswer = document.getElementById('answer-input');
+
+        // ==========================================
+        // CONFIGURACIÓN PWA Y MANIFIESTO
+        // ==========================================
+        // Generar ícono SVG y Manifiesto automáticamente
+        const svgIcon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" fill="#4CAF50" rx="100"/><text x="50%" y="55%" font-size="250" fill="white" font-family="Arial, sans-serif" text-anchor="middle" dominant-baseline="middle" font-weight="bold">M-F</text></svg>';
+        const iconDataUrl = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svgIcon);
+        
+        document.getElementById('apple-icon-placeholder').href = iconDataUrl;
+
+        const manifestJSON = {
+            "name": "Mate-Fácil Súper App",
+            "short_name": "Mate-Fácil",
+            "start_url": window.location.href,
+            "display": "standalone",
+            "background_color": "#f0f8ff",
+            "theme_color": "#4CAF50",
+            "icons": [{ "src": iconDataUrl, "sizes": "512x512", "type": "image/svg+xml" }]
+        };
+        const manifestBlob = new Blob([JSON.stringify(manifestJSON)], {type: 'application/manifest+json'});
+        document.getElementById('manifest-placeholder').href = URL.createObjectURL(manifestBlob);
+
+        // Lógica de Instalación PWA
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault(); // Evitar el mini-banner automático de Chrome
+            deferredPrompt = e;
+            // Mostrar nuestro propio botón gigante
+            document.getElementById('btn-pwa-install').style.display = 'block';
+        });
+
+        function installPWA() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        document.getElementById('btn-pwa-install').style.display = 'none';
+                    }
+                    deferredPrompt = null;
+                });
+            }
+        }
+
+        // INICIALIZACIÓN Y SEGURIDAD
+        window.onload = function() {
+            if (!isActivated) {
+                if (!myDeviceCode) {
+                    // Generar un código de 4 dígitos al azar (1000 - 9999)
+                    myDeviceCode = Math.floor(Math.random() * 9000) + 1000;
+                    localStorage.setItem('mate_facil_device_code', myDeviceCode);
+                }
+                document.getElementById('display-device-code').innerText = `MF-${myDeviceCode}`;
+                
+                // Lógica de Prueba Gratuita (48 horas)
+                if (!firstOpenTime) {
+                    firstOpenTime = Date.now();
+                    localStorage.setItem('mate_facil_first_open', firstOpenTime);
+                }
+                
+                const hoursElapsed = (Date.now() - parseInt(firstOpenTime)) / MS_PER_HOUR;
+                
+                if (hoursElapsed < TRIAL_HOURS) {
+                    // Aún en período de prueba
+                    const hoursLeft = Math.ceil(TRIAL_HOURS - hoursElapsed);
+                    document.getElementById('trial-banner').style.display = 'block';
+                    document.getElementById('trial-hours-left').innerText = hoursLeft;
+                    showView('home');
+                } else {
+                    // Prueba terminada
+                    showView('activation');
+                }
+            } else {
+                // Ya activado
+                showView('home');
+            }
+        };
+
+        function requestKey() {
+            const msg = `¡Hola! Descargué la Súper App Mate-Fácil. Mi código de dispositivo es *MF-${myDeviceCode}*. Quiero adquirir mi clave de activación.`;
+            const whatsappUrl = `https://api.whatsapp.com/send?phone=${PHONE_NUMBER}&text=${encodeURIComponent(msg)}`;
+            window.open(whatsappUrl, '_blank');
+        }
+
+        function verifyKey() {
+            const userInput = parseInt(document.getElementById('input-activation-key').value);
+            const correctKey = (parseInt(myDeviceCode) * SECRET_MULTIPLIER) + SECRET_ADDITION;
+
+            if (userInput === correctKey) {
+                localStorage.setItem('mate_facil_activated', 'true');
+                isActivated = true;
+                showView('home');
+            } else {
+                document.getElementById('activation-error').style.display = 'block';
+            }
+        }
+
+        // NAVEGACIÓN
+        function showView(viewName) {
+            for (let key in views) views[key].classList.remove('active');
+            views[viewName].classList.add('active');
+        }
+
+        function openLevel(nivel) {
+            currentLevel = nivel;
+            document.getElementById('level-title').innerText = `Nivel ${nivel}: ${NOMBRES_NIVELES[nivel]}`;
+            renderDayGrid();
+            showView('days');
+        }
+
+        // RENDERIZAR CUADRÍCULA DE DÍAS (Verificando cuáles ya hizo el niño)
+        function renderDayGrid() {
+            const container = document.getElementById('day-grid-container');
+            container.innerHTML = '';
+
+            for (let i = 1; i <= 20; i++) {
+                const btn = document.createElement('button');
+                btn.className = 'day-btn';
+                btn.innerText = i;
+                
+                // Buscar en el historial si aprobó este día (más del 60%)
+                const attempts = historyData.filter(h => h.nivel === currentLevel && h.dia === i);
+                const bestScore = attempts.reduce((max, obj) => obj.score > max ? obj.score : max, 0);
+                
+                if (bestScore >= (PREGUNTAS_POR_DIA * 0.6)) {
+                    btn.classList.add('completed');
+                }
+
+                btn.onclick = () => startQuiz(i);
+                container.appendChild(btn);
+            }
+        }
+
+        // ==========================================
+        // 🧠 SÚPER MOTOR MATEMÁTICO (Genera 100 días diferentes)
+        // ==========================================
+        function generateQuestions() {
+            let q = [];
+            const rnd = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+            const vertical = (a, b, op) => `<div class="vertical-math">&nbsp;${a}<br>${op}&nbsp;${b}<br><div class="line"></div></div>`;
+
+            for(let i=0; i<PREGUNTAS_POR_DIA; i++) {
+                let text = ""; let answer = 0; let tip = "";
+
+                // --- NIVEL 1: Aprendiendo a sumar y restar (1 dígito) ---
+                if (currentLevel === 1) {
+                    if (currentDay <= 10) { // Sumas
+                        let a = rnd(1, 9); let b = rnd(1, 9);
+                        text = `${a} + ${b}`; answer = a + b; tip = "¡Suma con los dedos o mental!";
+                    } else { // Restas
+                        let a = rnd(4, 10); let b = rnd(1, a - 1);
+                        text = `${a} - ${b}`; answer = a - b; tip = "¡A restar!";
+                    }
+                }
+
+                // --- NIVEL 2: Dominando sumas y restas (2 dígitos y verticales) ---
+                else if (currentLevel === 2) {
+                    if (currentDay <= 10) { // Sumas grandes
+                        let a = rnd(10, 50); let b = rnd(10, 40);
+                        if (i % 2 === 0) { text = `${a} + ${b}`; tip = "Suma horizontal"; }
+                        else { text = vertical(a, b, '+'); tip = "Suma vertical"; }
+                        answer = a + b;
+                    } else { // Restas prestando
+                        let a = rnd(20, 99); let b = rnd(10, a - 1);
+                        if (i % 2 === 0) { text = `${a} - ${b}`; tip = "Resta horizontal"; }
+                        else { text = vertical(a, b, '-'); tip = "Resta vertical"; }
+                        answer = a - b;
+                    }
+                }
+
+                // --- NIVEL 3: Intro Multiplicaciones ---
+                else if (currentLevel === 3) {
+                    if (currentDay <= 12) { // Tablas 2, 3, 4, 5
+                        let a = rnd(2, 5); let b = rnd(2, 9);
+                        text = `${a} × ${b}`; answer = a * b; tip = "Repasa las tablas del 2 al 5";
+                    } else { // Divisiones básicas
+                        let b = rnd(2, 5); let ans = rnd(2, 9); let a = b * ans;
+                        text = `${a} ÷ ${b}`; answer = ans; tip = "¿Qué número multiplicado da ese resultado?";
+                    }
+                }
+
+                // --- NIVEL 4: Dominando Multiplicaciones ---
+                else if (currentLevel === 4) {
+                    if (currentDay <= 10) { // Tablas 6, 7, 8, 9
+                        let a = rnd(6, 9); let b = rnd(3, 9);
+                        text = `${a} × ${b}`; answer = a * b; tip = "Tablas grandes";
+                    } else { // Multi vertical
+                        let a = rnd(12, 45); let b = rnd(2, 5);
+                        text = vertical(a, b, '×'); answer = a * b; tip = "Multiplica y lleva";
+                    }
+                }
+
+                // --- NIVEL 5: Súper Matemático (Problemas y mix) ---
+                else if (currentLevel === 5) {
+                    if (currentDay <= 5) { // Emojis
+                        let e1 = ['🍎','🐶','🚗'][rnd(0,2)]; let e2 = ['🍐','🐱','🚌'][rnd(0,2)];
+                        let a = rnd(2,6); let b = rnd(1,4); let c = rnd(1,5);
+                        text = `<div class="word-problem">${a} ${e1} + ${b} ${e2} + ${c} ${e1}<br><br>¿Cuántos ${e1} hay?</div>`;
+                        answer = a + c; tip = "Suma solo los dibujos iguales";
+                    } else if (currentDay <= 15) { // Problemas de texto cortos
+                        let nombres = ["Leo", "Ana", "Mia", "Hugo"]; let n = nombres[rnd(0,3)];
+                        let a = rnd(10, 30); let b = rnd(5, 15);
+                        if (Math.random() > 0.5) {
+                            text = `<div class="word-problem">${n} tenía ${a} dulces. Le regalaron ${b}.<br>¿Cuántos tiene ahora?</div>`;
+                            answer = a + b; tip = "Problema de suma";
+                        } else {
+                            text = `<div class="word-problem">${n} tenía ${a} monedas. Gastó ${b}.<br>¿Cuántas le quedan?</div>`;
+                            answer = a - b; tip = "Problema de resta";
+                        }
+                    } else { // Mix final jefe
+                        let ops = [
+                            { t: `${rnd(20,50)} + ${rnd(10,30)}`, a: rnd(20,50)+rnd(10,30) },
+                            { t: `${rnd(5,9)} × ${rnd(5,9)}`, a: rnd(5,9)*rnd(5,9) },
+                            { t: vertical(rnd(100,300), rnd(50,90), '-'), a: 0 } // Vertical resta
+                        ];
+                        let sel = rnd(0,1); // Solo horizontales para evitar error de alcance
+                        if(i%3 === 0) {
+                             let a = rnd(100, 300); let b = rnd(50, 99);
+                             text = vertical(a,b,'-'); answer = a-b; tip="Resta grande";
+                        } else {
+                             let a = rnd(6,9); let b = rnd(6,9);
+                             text = `${a} × ${b}`; answer = a*b; tip="¡Atención!";
+                        }
+                    }
+                }
+                
+                q.push({ text, answer, tip });
+            }
+            return q;
+        }
+
+        // ==========================================
+        // LÓGICA DEL QUIZ
+        // ==========================================
+        function startQuiz(dia) {
+            currentDay = dia;
+            questions = generateQuestions();
+            currentQIndex = 0;
+            currentAnswers = [];
+            showView('quiz');
+            
+            // Enter key listener (solo se añade una vez en init, aquí aseguramos limpieza)
+            inputAnswer.onkeypress = function(e) { if (e.key === 'Enter') evaluateAnswer(); };
+            document.getElementById('btn-next').onclick = evaluateAnswer;
+
+            loadQuestion();
+        }
+
+        function abortQuiz() {
+            clearInterval(timerInterval);
+            showView('days');
+        }
+
+        function loadQuestion() {
+            const q = questions[currentQIndex];
+            document.getElementById('question-text').innerHTML = q.text;
+            document.getElementById('quiz-tip').innerText = q.tip;
+            document.getElementById('quiz-progress').innerText = `${currentQIndex + 1} / ${PREGUNTAS_POR_DIA}`;
+            
+            const progress = ((currentQIndex) / PREGUNTAS_POR_DIA) * 100;
+            document.getElementById('progress-bar').style.width = `${progress}%`;
+
+            inputAnswer.value = '';
+            inputAnswer.focus();
+            
+            document.getElementById('quiz-timer').innerText = '0';
+            qStartTime = Date.now();
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                let seconds = Math.floor((Date.now() - qStartTime) / 1000);
+                document.getElementById('quiz-timer').innerText = seconds;
+            }, 1000);
+        }
+
+        function evaluateAnswer() {
+            const userVal = inputAnswer.value.trim();
+            if (userVal === '') return; 
+
+            const timeTaken = Math.floor((Date.now() - qStartTime) / 1000);
+            clearInterval(timerInterval);
+
+            const q = questions[currentQIndex];
+            const isCorrect = parseInt(userVal) === q.answer;
+
+            currentAnswers.push({
+                question: q.text,
+                correctAnswer: q.answer,
+                userAnswer: parseInt(userVal),
+                isCorrect: isCorrect,
+                time: timeTaken
+            });
+
+            const fbIcon = document.getElementById('feedback-icon');
+            const fbMsg = document.getElementById('feedback-message');
+            
+            fbIcon.classList.remove('pop-icon');
+            void fbIcon.offsetWidth; 
+            fbIcon.classList.add('pop-icon');
+
+            if (isCorrect) {
+                fbIcon.innerText = '✅'; fbMsg.innerText = '¡Correcto!'; fbMsg.style.color = 'var(--primary-dark)';
+            } else {
+                fbIcon.innerText = '❌'; fbMsg.innerText = `¡Ups! Era ${q.answer}`; fbMsg.style.color = 'var(--danger)';
+            }
+
+            // Cambiar comportamiento del botón enter
+            inputAnswer.onkeypress = function(e) { if (e.key === 'Enter') continueQuiz(); };
+            showView('feedback');
+        }
+
+        function continueQuiz() {
+            currentQIndex++;
+            if (currentQIndex < questions.length) {
+                showView('quiz');
+                // Restaurar enter para responder
+                inputAnswer.onkeypress = function(e) { if (e.key === 'Enter') evaluateAnswer(); };
+                loadQuestion();
+            } else {
+                finishQuiz();
+            }
+        }
+
+        function finishQuiz() {
+            const correctCount = currentAnswers.filter(a => a.isCorrect).length;
+            const totalTime = currentAnswers.reduce((acc, curr) => acc + curr.time, 0);
+            
+            const today = new Date().toLocaleDateString();
+            
+            historyData.push({
+                nivel: currentLevel,
+                dia: currentDay,
+                date: today,
+                score: correctCount,
+                totalTime: totalTime,
+                details: currentAnswers
+            });
+            localStorage.setItem('mate_facil_super_app', JSON.stringify(historyData));
+
+            document.getElementById('result-level-day').innerText = `Nivel ${currentLevel} - Día ${currentDay}`;
+            document.getElementById('score-text').innerText = correctCount;
+            document.getElementById('total-time-display').innerText = totalTime;
+
+            let msg = correctCount >= (PREGUNTAS_POR_DIA * 0.9) ? "¡Excelente! 🌟" : 
+                      correctCount >= (PREGUNTAS_POR_DIA * 0.6) ? "¡Aprobado! 👍" : "¡Sigue practicando! 💪";
+            document.getElementById('score-message').innerText = msg;
+            
+            document.getElementById('progress-bar').style.width = `100%`;
+
+            // Actualizar la cuadrícula para reflejar si ganó la estrella
+            renderDayGrid();
+
+            showView('result');
+        }
+
+        // ==========================================
+        // ZONA DE PADRES Y COMPARTIR
+        // ==========================================
+        function openParentArea() {
+            const pin = prompt("Ingresa el PIN de padres (1234):");
+            if (pin === PARENT_PIN) {
+                renderParentRecords();
+                showView('parent');
+            } else if (pin !== null) { alert("PIN incorrecto."); }
+        }
+
+        function renderParentRecords() {
+            const container = document.getElementById('parent-records');
+            container.innerHTML = '';
+
+            if (historyData.length === 0) {
+                container.innerHTML = '<p>No hay registros todavía.</p>';
+                return;
+            }
+
+            const reversedHistory = [...historyData].reverse();
+
+            reversedHistory.forEach((attempt, index) => {
+                let html = `<div style="background:#f9f9f9; border-left:4px solid var(--level${attempt.nivel}); padding:10px; margin-bottom:10px; border-radius:5px;">
+                    <div style="font-size:16px; font-weight:bold; margin-bottom:5px;">
+                        Nivel ${attempt.nivel} | Día ${attempt.dia} <span style="font-size:12px; font-weight:normal; color:#666; float:right;">${attempt.date}</span>
+                    </div>
+                    <div style="font-size:14px; color:#444;">
+                        Puntuación: <strong>${attempt.score}/${PREGUNTAS_POR_DIA}</strong> | Tiempo: <strong>${attempt.totalTime}s</strong>
+                    </div>
+                </div>`;
+                container.innerHTML += html;
+            });
+        }
+
+        function clearData() {
+            if(confirm("¿Seguro que quieres borrar TODOS los progresos y estrellas de todos los niveles?")) {
+                historyData = [];
+                localStorage.removeItem('mate_facil_super_app');
+                renderParentRecords();
+                renderDayGrid();
+            }
+        }
+
+        function sendWhatsApp() {
+            if (currentAnswers.length === 0) return;
+            const correctCount = currentAnswers.filter(a => a.isCorrect).length;
+            const totalTime = currentAnswers.reduce((acc, curr) => acc + curr.time, 0);
+            
+            let msg = `*Mate-Fácil: Nivel ${currentLevel} - Día ${currentDay} completado!* 🚀\n`;
+            msg += `\n*Nota:* ${correctCount}/${PREGUNTAS_POR_DIA} correctas ✅`;
+            msg += `\n*Tiempo total:* ${totalTime} segundos ⏱️\n`;
+
+            const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+            window.open(whatsappUrl, '_blank');
+        }
+
+    </script>
+</body>
+</html>
